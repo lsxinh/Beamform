@@ -1,143 +1,151 @@
-%% beamforming output for whole year (different method)
-% fl=dir(['../pbm_MSci/20*']);
-% sang=zeros(138,length(fl)*33);
+%% beamforming output for whole year
+% fl=dir(['/data/geophys/scratch/ep8g10/pbm_MSci/20*']);
+% sang=zeros(138,length(fl)*33); %138 is number of frequencies.  33 is number of timewindows each day
 % spwr=sang;ssl=sang;
 % for i=1:length(fl)
-%  load (['../pbm_MSci/',fl(i).name]);
-%  
+%  load (['/data/geophys/scratch/ep8g10/pbm_MSci/',fl(i).name]);
+%  %size of beam is 181x138x41x33: direction:freq:slowness:window
 % for ic= [5:length(I)-5];  
 %    for iday=1:size(beam,4);
+%        %average/smooth over frequency range and cut down to one time window
 %         tre=double(squeeze(mean(beam(:,ic+[-4:1:4],:,iday),2)));
 %        % tre=double(squeeze(mean(beam(:,ic+[-4:1:4],:,iday+[-7:1:7]))));
 %         tre=10*log10(squeeze((tre)));
 %         tre(isnan(tre))=0;
+%        %tre is now a second order tensor direction:slowness
 % %        tre=tre-max(max(tre));
-%         [ii,j]=find(tre==max(max(tre)),1); 
-%         sang(ic,(i-1)*33+iday)=theta(ii);
-%         spwr(ic,(i-1)*33+iday)=max(max(tre));
-%         ssl(ic,(i-1)*33+iday)=SL(j);
-%         isub=isub+1; %islow(isub)=SL(j(1));
+%         [ii,j]=find(tre==max(max(tre)),1); %finds max of tre (and associated direction and slowness)
+%         sang(ic,(i-1)*33+iday)=theta(ii); %angle at max beampower, for this frequency and timestep
+%         spwr(ic,(i-1)*33+iday)=max(max(tre)); %max beampower
+%         ssl(ic,(i-1)*33+iday)=SL(j);  %slowness at max beampower, for this frequency and timestep
+%         %isub=isub+1; %islow(isub)=SL(j(1));
 %    end
 %    
 % end
 % display(fl(i).name);
 % end
 % 
-% eval(['save /data/geophys/scratch/ep8g10/CODES/dud ' 'sang spwr ssl']);
+% eval(['save /data/geophys/scratch/jn6g09/Beamforming/ts_Cas ' 'sang spwr ssl']);
 
 %% contour plot
- load (['/data/geophys/scratch/ep8g10/CODES/dud.mat']); %output from section 1
-load (['/data/geophys/scratch/ep8g10/pbm_MSci/WY_Cas_var.mat']) % beamforming variables- slowness, frequency
-% 
-% %power time series
-% % figure(1)
-timev = [0:298/9834:297.9697]; %time vector
-% pcolor(timev,frq(I(5:133)),spwr(5:133,:)); shading flat;
-% ylabel('frequency/ Hz '); xlabel('time /days');
-% colorbar;ylabel(colorbar,'power/ dB');
-% caxis([2 16]);
-% title('time-series of intensity for f = 0.03Hz to 0.3Hz (method (2))');
-% %set background colour
-% set(gcf,'Color',[1,1,1]);
-% 
-% % % %
-% figure(2)
-% hold on
-% %subplot(3,2,1)
-% pcolor(timev(1981:3631),frq(I(5:60)),spwr(5:60,1981:3631)); shading flat;
-% ylabel('frequency/ Hz '); xlabel('time /days');colorbar;
-% ylabel(colorbar,'power/ dB');
-% caxis([8 16]);
-% title(['time-series of intensity for days ',num2str((round(timev(1981)))),'- ',num2str((round(timev(3631)))) ]);
-% %set background colour
-% set(gcf,'Color',[1,1,1]);
-% 
-% figure(3)
-% mind=5776;
-% maxd=6271;
-% %subplot(3,2,2)
-% pcolor(timev(mind:maxd),frq(I(5:60)),spwr(5:60,mind:maxd)); shading flat;
-% ylabel('f/ Hz '); xlabel('time /days');%colorbar;ylabel(colorbar,'power/ dB');
-% caxis([8 16]);
-% title(['intensity for days ',num2str((round(timev(mind)))),'- ',num2str((round(timev(maxd)))) ]);
-% %set background colour
-% set(gcf,'Color',[1,1,1]);
+clear all;close all;
+load (['/data/geophys/scratch/jn6g09/Beamforming/ts_Cas.mat']); %output from section 1
+load (['/data/geophys/scratch/jn6g09/Beamforming/WY_Cas_var.mat']) % beamforming variables- slowness, frequency
 
-figure(34)
-mind= 6023 %82.5d  %2641 = 80d; %2674  = 81d
-maxd=6089 %6073 84d  %2772 84d %2740 =83d;
-%subplot(3,2,2)
-pcolor(timev(mind:maxd),frq(I(5:60)),spwr(5:60,mind:maxd)); shading flat;
-ylabel('f/ Hz '); xlabel('time /days');%colorbar;
-caxis([8 16]);
-title(['intensity for days ',num2str((round(timev(mind)))),'- ',num2str((round(timev(maxd)))) ]);
-%set background colour
+fl=dir(['/data/geophys/scratch/ep8g10/pbm_MSci/20*']);
+
+%choose dates to plot
+start=[2013 5 1 0 0 0];
+stop=[2013 5 31 0 0 0];
+
+%choose frequencies to plot
+freqs=frq(I)';
+startf=0.0313;
+stopf=0.15;
+
+%choose which plots to make (=1 to plot)
+plotint=1;
+plotsl=0;
+plotaz=0;
+
+%create a time vector
+clear year day time_pre yearstrt
+for i=1:length(fl)
+yeari=str2double(fl(i).name(1:4));year(i,:)=yeari;
+dayi=str2double(fl(i).name(6:8));day(i,:)=dayi;
+end
+for j=1:length(fl)
+yearstrt(j)=datenum(year(j),1,1,0,0,0);
+time_pre(j)=yearstrt(j)+day(j)-1;
+end 
+nt=size(beam,4)
+for i=1:length(fl)
+    time((i-1)*nt+1)=time_pre(i);
+    for j=1:nt-1
+        time((i-1)*nt+1+j)=time_pre(i)+(1/nt)*j;
+    end
+end
+time=time';
+dv1=datevec(time);
+
+
+%cut data down into chosen date
+startnum=datenum(start);
+stopnum=datenum(stop);
+starti=find(round(10.*time)==round(10.*startnum),1,'first');
+stopi=find(round(10.*time)==round(10.*stopnum),1,'last');
+time=time(starti:stopi);
+dv=dv1(starti:stopi);
+spwr=spwr(:,starti:stopi);
+ssl=ssl(:,starti:stopi);
+sang=sang(:,starti:stopi);
+
+%cut data into chosen frequnecies
+[c startfi] = min(abs(freqs-startf));
+[c stopfi]= min(abs(freqs-stopf));
+freqs=freqs(startfi:stopfi);
+spwr=spwr(startfi:stopfi,:);
+ssl=ssl(startfi:stopfi,:);
+sang=sang(startfi:stopfi,:);
+
+%remove zero data at beginning and end frequencies caused by smoothing
+%over a frequency range
+val=find(any(spwr,2)==1);
+freqs=freqs(val);
+spwr=spwr(val,:);
+ssl=ssl(val,:);
+sang=sang(val,:);
+
+%tidy up
+clear c dayi frq I SL day dv1 i j nt startfi stopfi startnum stopnum
+clear starti stopfi stopi stopnum theta time_pre val yeari yearstrt year
+
+
+%power time series
+if plotint==1
+figure(1)
+pcolor(time,freqs,spwr); shading flat;
+hold on;
+y=zeros(length(time))+min(freqs);%plotting dots at each time step somehow
+%forces it to plot it correctly
+plot(time,y,'o','MarkerSize',1)
+ylabel('frequency (Hz) '); 
+xlabel('date');
+caxis([9 16])
+colorbar;
+ylabel(colorbar,'power (dB)');
+datetick('x','dd/mm/yy','keeplimits','keepticks')
+title('time-series of maximum intensity');
 set(gcf,'Color',[1,1,1]);
-% 
-% % %slowness time series
-% figure(4)
-% pcolor(timev,frq(I(5:133)),ssl(5:133,:)); shading flat;
-% ylabel('frequency/ Hz'); xlabel('time /days');colorbar;
-% title('time-series of slowness for f = 0.03Hz to 0.3Hz (method(2))');
-% ylabel(colorbar,'slowness/ s(km)^{-1}');
-% %set background colour
-%  set(gcf,'Color',[1,1,1]);
-% %  
-% %figure(5)
-% subplot(3,2,3)
-% pcolor(timev(1981:3631),frq(I(5:60)),ssl(5:60,1981:3631)); shading flat;
-% ylabel('frequency/ Hz '); xlabel('time /days');colorbar;
-% %caxis([8 16]);
-% ylabel(colorbar,'slowness/ s(km)^{-1}');
-% title(['slowness for days ',num2str((round(timev(1981)))),'- ',num2str((round(timev(3631)))) ]);
-% %set background colour
-% set(gcf,'Color',[1,1,1]);
-% 
-% %figure(6)
-% subplot(3,2,4)
-% mind=5776;
-% maxd=6271;
-% pcolor(timev(mind:maxd),frq(I(5:60)),ssl(5:60,mind:maxd)); shading flat;
-% ylabel('f/ Hz '); xlabel('time /days')%colorbar;
-% %ylabel(colorbar,'slowness/ s(km)^{-1}');
-%  title(['slowness for days ',num2str((round(timev(mind)))),'- ',num2str((round(timev(maxd)))) ]);
-% %set background colour
-% set(gcf,'Color',[1,1,1]);
-% 
-% % azimuths time series
-% figure(4)
-% pcolor(timev,frq(I(5:133)),sang(5:133,:)); shading flat;
-% ylabel('frequency/ Hz'); xlabel('time /days');colorbar;
-% title('time-series of azimuth for f = 0.03Hz to 0.3Hz (method(2))');
-% ylabel(colorbar,'azimuth/ \circ'); caxis([0 360]);
-% set(colorbar,'YTick',[0:45:360]);
-% %set background colour
-%  set(gcf,'Color',[1,1,1]);
+end
 
+%slowness time series
+if plotsl==1
+figure(2)
+pcolor(time,freqs,ssl); shading flat;
+hold on;
+plot(time,y,'o','MarkerSize',1)
+ylabel('frequency (Hz)');
+xlabel('date');
+colorbar
+ylabel(colorbar,'slowness (s/km)');
+datetick('x','dd/mm/yy','keeplimits','keepticks')
+title('time-series of slowness at maximum intensity');
+set(gcf,'Color',[1,1,1]);
+end
 
-% figure(5)
-% %subplot(3,2,5)
-% pcolor(timev(1981:3631),frq(I(5:60)),sang(5:60,1981:3631)); shading flat;
-% ylabel('frequency/ Hz '); xlabel('time /days');colorbar;
-% %caxis([8 16]);
-% ylabel(colorbar,'azimuth/ \circ'); caxis([0 360]);
-% title(['azmiuth for days ',num2str((round(timev(1981)))),'- ',num2str((round(timev(3631)))) ]);
-% %set background colour
-% set(gcf,'Color',[1,1,1]);
-% 
-% figure(6)
-% %subplot(3,2,6)
-% mind=5776;
-% maxd=6271;
-% pcolor(timev(mind:maxd),frq(I(5:60)),sang(5:60,mind:maxd)); shading flat;
-% ylabel('frequency/ Hz'); xlabel('time /days');colorbar;
-% ylabel(colorbar,'azimuth/ \circ'); 
-% caxis([0 360]);
-% title(['azimuth for days ',num2str((round(timev(mind)))),'- ',num2str((round(timev(maxd)))) ]);
-% %set background colour
-% set(gcf,'Color',[1,1,1]);
-
-  
-% %frequency spectrum
-% figure(7); xlabel('frequency /Hz'); ylabel('power?');
-% figure(7); plot(spwr(:,1),'k*');title('day 1 (part) frequency spectrum?');
+%azimuth time series
+if plotaz==1
+figure(3)
+pcolor(time,freqs,sang); shading flat;
+hold on;
+plot(time,y,'o','MarkerSize',1)
+ylabel('frequency (Hz)');
+xlabel('date');
+colorbar
+caxis([0 360])
+ylabel(colorbar,'azimuth (\circ)');
+datetick('x','dd/mm/yy','keeplimits','keepticks')
+title('time-series of azimuth at maximum intensity');
+set(gcf,'Color',[1,1,1]);
+end
