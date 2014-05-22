@@ -1,18 +1,17 @@
 %% radar plots of 1 day
-
+clear all
 %% Actual beamforming data
-% load day 82 (from start of dataset)
-%load (['/data/geophys/scratch/ep8g10/pbm_MSci/2012_302.mat']);
-% day 183
+% load day
 load (['/data/geophys/scratch/ep8g10/pbm_MSci/2012_302.mat']);
 
 % %% data reshaped for radar plot (slowness against azimuth)
 % isub=0;
  for ic= [5:5:length(I)-5];  
     for iday=3:30;
-         tre=double(squeeze(mean(beam(:,ic+[-4:1:4],:,iday+[-2:1:2]),2)));
-%        % tre=double(squeeze(mean(beam(:,ic+[-4:1:4],:,iday+[-7:1:7]))));
-         tre=10*log10(squeeze(mean(tre,3)));
+        % average/smooth over frequency range 
+        tre=double(squeeze(mean(beam(:,ic+[-4:1:4],:,iday+[-2:1:2]),2)));
+        %average/smooth over windows
+        tre=10*log10(squeeze(mean(tre,3)));
 % %        tre=tre-max(max(tre));
 %         [i,j]=find(tre==max(max(tre)),1);  
 %         isub=isub+1; %islow(isub)=SL(j(1));
